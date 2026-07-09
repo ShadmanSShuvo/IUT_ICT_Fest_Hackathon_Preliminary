@@ -11,10 +11,12 @@ from sqlalchemy.orm import Session
 from ..models import Booking, RefundLog
 
 
+def _round_half_up(cents: float) -> int:
+    return int(cents + 0.5)
+
+
 def log_refund(db: Session, booking: Booking, percent: int) -> RefundLog:
-    dollars = booking.price_cents / 100.0
-    refund_dollars = dollars * (percent / 100.0)
-    amount_cents = int(refund_dollars * 100)
+    amount_cents = _round_half_up(booking.price_cents * (percent / 100.0))
     entry = RefundLog(
         booking_id=booking.id,
         amount_cents=amount_cents,

@@ -11,6 +11,7 @@ from ..database import get_db
 from ..errors import AppError
 from ..models import Booking, Room, User
 from ..services.export import generate_export
+from .rooms import _get_org_room
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -69,5 +70,7 @@ def export(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
+    if room_id is not None:
+        _get_org_room(db, room_id, admin.org_id)
     csv_body = generate_export(db, admin.org_id, admin.id, room_id, include_all)
     return Response(content=csv_body, media_type="text/csv")
