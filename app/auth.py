@@ -2,6 +2,7 @@
 import hashlib
 import hmac
 import os
+import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -23,6 +24,7 @@ from .models import User
 # longer be used.
 _revoked_tokens: set[str] = set()
 _revoked_refresh_tokens: set[str] = set()
+_refresh_token_lock = threading.Lock()
 
 _PBKDF2_ROUNDS = 100_000
 
@@ -88,10 +90,11 @@ def revoke_access_token(payload: dict) -> None:
 
 
 def check_and_revoke_refresh_token(payload: dict) -> None:
-    jti = payload.get("jti")
-    if jti in _revoked_refresh_tokens:
-        raise AppError(401, "UNAUTHORIZED", "Refresh token already used")
-    _revoked_refresh_tokens.add(jti)
+    with _refresh_token_lock:
+        jti = payload.get("jti")
+        if jti in _revoked_refresh_tokens:
+            raise AppError(401, "UNAUTHORIZED", "Refresh token already used")
+        _revoked_refresh_tokens.add(jti)
 
 
 def get_token_payload(request: Request) -> dict:
